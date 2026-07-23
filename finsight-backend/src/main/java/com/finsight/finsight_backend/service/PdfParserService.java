@@ -6,6 +6,7 @@ import com.finsight.finsight_backend.entity.User;
 import com.finsight.finsight_backend.repository.CategoryRepository;
 import com.finsight.finsight_backend.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.stereotype.Service;
@@ -22,11 +23,12 @@ public class PdfParserService {
 
     private final TransactionRepository transactionRepository;
     private final CategoryRepository categoryRepository;
+    private final AutoCategorizationService autoCategorizationService;
 
     public int parseAndSave(MultipartFile file, User user) throws Exception {
         int count = 0;
 
-        try (PDDocument document = PDDocument.load(file.getBytes())) {
+        try (PDDocument document = Loader.loadPDF(file.getBytes())) {
             PDFTextStripper stripper = new PDFTextStripper();
             String text = stripper.getText(document);
             String[] lines = text.split("\n");
@@ -49,7 +51,7 @@ public class PdfParserService {
                     String type = line.toLowerCase().contains("credit") ? "INCOME" : "EXPENSE";
                     String title = line.substring(0, Math.min(line.length(), 50)).trim();
 
-                    Category category = categoryRepository.findByName("Other").orElse(null);
+                    Category category = autoCategorizationService.categorize(title, "");
 
                     Transaction transaction = Transaction.builder()
                             .user(user)

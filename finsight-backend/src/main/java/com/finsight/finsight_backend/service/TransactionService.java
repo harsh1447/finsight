@@ -23,6 +23,7 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
+    private final AutoCategorizationService autoCategorizationService;
 
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -53,8 +54,14 @@ public class TransactionService {
 
         Category category = null;
         if (request.getCategoryId() != null) {
-            category = categoryRepository.findById(request.getCategoryId())
-                    .orElse(null);
+            category = categoryRepository.findById(request.getCategoryId()).orElse(null);
+        }
+
+        if (category == null) {
+            category = autoCategorizationService.categorize(
+                request.getTitle(),
+                request.getMerchantName()
+            );
         }
 
         Transaction transaction = Transaction.builder()
@@ -103,6 +110,12 @@ public class TransactionService {
         Category category = null;
         if (request.getCategoryId() != null) {
             category = categoryRepository.findById(request.getCategoryId()).orElse(null);
+        }
+        if (category == null) {
+            category = autoCategorizationService.categorize(
+                request.getTitle(),
+                request.getMerchantName()
+            );
         }
 
         transaction.setTitle(request.getTitle());

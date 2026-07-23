@@ -24,6 +24,7 @@ public class CsvParserService {
 
     private final TransactionRepository transactionRepository;
     private final CategoryRepository categoryRepository;
+    private final AutoCategorizationService autoCategorizationService;
 
     private static final List<DateTimeFormatter> DATE_FORMATS = Arrays.asList(
         DateTimeFormatter.ofPattern("dd/MM/yyyy"),
@@ -47,7 +48,6 @@ public class CsvParserService {
                     String amountStr = row[1].trim().replaceAll("[^0-9.-]", "");
                     String type = row[2].trim().toUpperCase();
                     String dateStr = row.length > 3 ? row[3].trim() : LocalDate.now().toString();
-                    String categoryName = row.length > 4 ? row[4].trim() : "Other";
                     String merchant = row.length > 5 ? row[5].trim() : "";
 
                     if (title.isEmpty() || amountStr.isEmpty()) continue;
@@ -56,8 +56,7 @@ public class CsvParserService {
                     BigDecimal amount = new BigDecimal(amountStr);
                     LocalDate date = parseDate(dateStr);
 
-                    Category category = categoryRepository.findByName(categoryName)
-                            .orElse(categoryRepository.findByName("Other").orElse(null));
+                    Category category = autoCategorizationService.categorize(title, merchant);
 
                     Transaction transaction = Transaction.builder()
                             .user(user)
