@@ -187,4 +187,60 @@ public class GeminiAiService {
                     .build();
         }
     }
+
+    public AiInsightResponse chat(String userMessage) {
+        User user = getCurrentUser();
+        List<Transaction> transactions = transactionRepository
+                .findByUserIdOrderByTransactionDateDesc(user.getId());
+
+        BigDecimal totalIncome = transactions.stream()
+                .filter(t -> t.getType().equals("INCOME"))
+                .map(Transaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalExpense = transactions.stream()
+                .filter(t -> t.getType().equals("EXPENSE"))
+                .map(Transaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        Map<String, BigDecimal> categoryTotals = transactions.stream()
+                .filter(t -> t.getType().equals("EXPENSE"))
+                .collect(Collectors.groupingBy(
+                        t -> t.getCategory() != null ? t.getCategory().getName() : "Other",
+                        Collectors.reducing(BigDecimal.ZERO, Transaction::getAmount, BigDecimal::add)
+                ));
+
+        StringBuilder context = new StringBuilder();
+        context.append("You are a helpful personal finance assistant for an Indian user. ");
+        context.append("Answer their question based on their financial data below.\n\n");
+        context.append("FINANCIAL DATA:\n");
+        context.append("Total Income: ₹").append(totalIncome).append("\n");
+        context.append("Total Expenses: ₹").append(totalExpense).append("\n");
+        context.append("Savings: ₹").append(totalIncome.subtract(totalExpense)).append("\n\n");
+        context.append("Spending by Category:\n");
+        categoryTotals.forEach((cat, amount) ->
+                context.append("- ").append(cat).append(": ₹").append(amount).append("\n"));
+        context.append("\nRecent Transactions:\n");
+        transactions.stream().limit(15).forEach(t ->
+                context.append("- ").append(t.getTitle())
+                        .append(" ₹").append(t.getAmount())
+                        .append(" (").append(t.getType()).append(")")
+                        .append(" on ").append(t.getTransactionDate()).append("\n"));
+        context.append("\nUser Question: ").append(userMessage);
+        context.append("\n\nAnswer the question directly and concisely. ");
+        context.append("Use ₹ for amounts. Be friendly and helpful.");
+
+        try {
+            String response = callGemini(context.toString());
+            return AiInsightResponse.builder()
+                    .insight(response)
+                    .type("CHAT")
+                    .build();
+        } catch (Exception e) {
+            return AiInsightResponse.builder()
+                    .insight("Sorry, I could not process your question. Please try again.")
+                    .type("ERROR")
+                    .build();
+        }
+    }
 }

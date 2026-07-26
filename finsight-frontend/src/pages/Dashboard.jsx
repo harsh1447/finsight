@@ -63,6 +63,10 @@ export default function Dashboard() {
             className="text-sm bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-lg transition">
             Transactions
           </button>
+          <button onClick={() => navigate('/chat')}
+            className="text-sm bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg transition">
+            AI Chat
+          </button>
           <button onClick={handleLogout}
             className="text-sm bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition">
             Logout

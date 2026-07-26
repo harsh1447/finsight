@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
+import Chat from './pages/Chat';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -23,6 +24,9 @@ function App() {
           } />
           <Route path="/transactions" element={
             <ProtectedRoute><Transactions /></ProtectedRoute>
+          } />
+          <Route path="/chat" element={
+            <ProtectedRoute><Chat /></ProtectedRoute>
           } />
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
